@@ -1,0 +1,199 @@
+definitions:
+  models.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  models.GetUserResponse:
+    properties:
+      email:
+        example: iivanov@gmail.com
+        type: string
+      first_name:
+        example: Ivan
+        type: string
+      last_name:
+        example: Ivanov
+        type: string
+      phone:
+        example: "+79999999999"
+        type: string
+      username:
+        example: IvanIvanov2000
+        type: string
+    type: object
+  models.SuccessResponse:
+    properties:
+      success:
+        type: string
+    type: object
+  models.User:
+    properties:
+      email:
+        example: iivanov@gmail.com
+        type: string
+      first_name:
+        example: Ivan
+        type: string
+      last_name:
+        example: Ivanov
+        type: string
+      password:
+        example: qwerty1234
+        type: string
+      phone:
+        example: "+79999999999"
+        type: string
+      username:
+        example: IvanIvanov2000
+        type: string
+    type: object
+host: localhost:3000
+info:
+  contact:
+    email: olenka.shishkina.02@mail.ru
+    name: Olga Shishkina
+  description: A service that stores information about users.
+  title: User service API
+  version: "1.0"
+paths:
+  /health:
+    get:
+      operationId: health
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Check service status
+  /user:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user with given data. Checks that email and phone
+        are in the correct format, and that the user with given username is not yet
+        in the database, otherwise it returns the BadRequest status.
+      operationId: createUser
+      parameters:
+      - description: user data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      responses:
+        "200":
+          description: User created successfully.
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: User already exists / missing required 'user' parameter / invalid
+            format of 'email' or 'phone' parameters.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Database error / Internal Server Error.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Create user
+      tags:
+      - user
+  /user/{username}:
+    delete:
+      description: Deletes the user with given username.
+      operationId: deleteUser
+      parameters:
+      - description: username of the user to delete.
+        in: path
+        name: username
+        required: true
+        type: string
+      responses:
+        "200":
+          description: User deleted successfully.
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Missing required 'username' parameter.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: User with given username not found.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Database error / Internal Server Error.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Delete user
+      tags:
+      - user
+    get:
+      description: Returns information about the user with the given username.
+      operationId: getUser
+      parameters:
+      - description: Username of the user to get
+        in: path
+        name: username
+        required: true
+        type: string
+      responses:
+        "200":
+          description: User data received successfully.
+          schema:
+            $ref: '#/definitions/models.GetUserResponse'
+        "400":
+          description: Missing required 'username' parameter.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: User with given username not found.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Database error / Internal Server Error.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get user
+      tags:
+      - user
+    put:
+      consumes:
+      - application/json
+      description: Updates user data with given username.
+      operationId: updateUser
+      parameters:
+      - description: username of the user to update
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: user data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      responses:
+        "200":
+          description: User information updated successfully.
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Missing required 'username' or 'user' parameters.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: User with given username not found.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Database error / Internal Server Error.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Update user
+      tags:
+      - user
+schemes:
+- http
+swagger: "2.0"
