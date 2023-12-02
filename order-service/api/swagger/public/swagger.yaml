@@ -1,0 +1,247 @@
+definitions:
+  models.CreateOrderResponse:
+    properties:
+      order_id:
+        example: 3f8f0d05-0c59-4e7b-a7b6-48e0d5c11f71
+        type: string
+      success:
+        type: string
+    type: object
+  models.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  models.Order:
+    properties:
+      price:
+        example: 560
+        type: integer
+      product_id:
+        example: 312
+        type: integer
+      quantity:
+        example: 2
+        type: integer
+    type: object
+  models.OrderInfo:
+    properties:
+      order_id:
+        example: 3f8f0d05-0c59-4e7b-a7b6-48e0d5c11f71
+        type: string
+      price:
+        example: 560
+        type: integer
+      product_id:
+        example: 312
+        type: integer
+      quantity:
+        example: 2
+        type: integer
+      status:
+        example: success
+        type: string
+      total_cost:
+        example: 1120
+        type: integer
+      username:
+        example: Maria
+        type: string
+    type: object
+  models.SuccessResponse:
+    properties:
+      success:
+        type: string
+    type: object
+host: localhost:9000
+info:
+  contact:
+    email: olenka.shishkina.02@mail.ru
+    name: Olga Shishkina
+  description: A service that stores information about user orders.
+  title: Billing service API
+  version: "1.0"
+paths:
+  /createOrder:
+    post:
+      consumes:
+      - application/json
+      description: Create a new order
+      operationId: createOrder
+      parameters:
+      - description: 'Authorization header: ''Bearer <access_token>;<refresh_token>'''
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: order
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/models.Order'
+      responses:
+        "200":
+          description: New order was successfully created.
+          schema:
+            $ref: '#/definitions/models.CreateOrderResponse'
+        "400":
+          description: Not enough funds to write off / required Authorization header
+            or 'order' parameter is missing.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Authentication failed
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Database error / Internal Server Error.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Create order
+      tags:
+      - order
+  /deleteOrder/{orderID}:
+    delete:
+      description: Deletes order by orderID.
+      operationId: deleteOrder
+      parameters:
+      - description: 'Authorization header: ''Bearer <access_token>;<refresh_token>'''
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: orderID in uuid format
+        in: path
+        name: orderID
+        required: true
+        type: string
+      responses:
+        "200":
+          description: The order has been successfully deleted.
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: The required Authorization header or 'orderID' field is missing.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Authentication failed
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Database error / Internal Server Error.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Delete order
+      tags:
+      - order
+  /getAllOrders:
+    get:
+      description: Returns all orders.
+      operationId: getAllOrders
+      parameters:
+      - description: 'Authorization header: ''Bearer <access_token>;<refresh_token>'''
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      responses:
+        "200":
+          description: All orders has been successfully received.
+          schema:
+            items:
+              $ref: '#/definitions/models.OrderInfo'
+            type: array
+        "400":
+          description: Missing required Authorization header.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Authentication failed
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Database error / Internal Server Error.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get all orders
+      tags:
+      - order
+  /getOrderByID/{orderID}:
+    get:
+      description: Returns the order by order_id.
+      operationId: getOrderByID
+      parameters:
+      - description: 'Authorization header: ''Bearer <access_token>;<refresh_token>'''
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: orderID in uuid format
+        in: path
+        name: orderID
+        required: true
+        type: string
+      responses:
+        "200":
+          description: The user's order have been successfully received.
+          schema:
+            $ref: '#/definitions/models.OrderInfo'
+        "400":
+          description: Missing required Authorization header.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Authentication failed
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Database error / Internal Server Error.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get order
+      tags:
+      - order
+  /getUserOrders:
+    get:
+      description: Returns the user's orders.
+      operationId: getUserOrders
+      parameters:
+      - description: 'Authorization header: ''Bearer <access_token>;<refresh_token>'''
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      responses:
+        "200":
+          description: The user's orders have been successfully received.
+          schema:
+            $ref: '#/definitions/models.OrderInfo'
+        "400":
+          description: Missing required Authorization header.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Authentication failed
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Database error / Internal Server Error.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get user orders
+      tags:
+      - order
+  /health:
+    get:
+      operationId: health
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+      summary: Check service status
+schemes:
+- http
+swagger: "2.0"

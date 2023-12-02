@@ -1,0 +1,114 @@
+definitions:
+  models.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  models.SuccessResponse:
+    properties:
+      success:
+        type: string
+    type: object
+  models.UpdateBalance:
+    properties:
+      amount:
+        example: 1000
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: olenka.shishkina.02@mail.ru
+    name: Olga Shishkina
+  description: A service that stores information about balances on user accounts.
+  title: Billing service API
+  version: "1.0"
+paths:
+  /balance:
+    get:
+      description: Returns the user's balance.
+      operationId: getBalance
+      parameters:
+      - description: 'Authorization header: ''Bearer <access_token>;<refresh_token>'''
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      responses:
+        "200":
+          description: The user's balance has been successfully received.
+          schema:
+            type: integer
+        "400":
+          description: Missing required Authorization header.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Authentication failed
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: User account not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Database error / Internal Server Error.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get balance
+      tags:
+      - balance
+    post:
+      consumes:
+      - application/json
+      description: Updates user balance.
+      operationId: updateBalance
+      parameters:
+      - description: 'Authorization header: ''Bearer <access_token>;<refresh_token>'''
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: amount (may be negative)
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateBalance'
+      responses:
+        "200":
+          description: The user's balance information has been successfully updated.
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Not enough funds to write off / required Authorization header
+            or 'amount' field is missing.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Authentication failed
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: User account not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Database error / Internal Server Error.
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Update balance
+      tags:
+      - balance
+  /health:
+    get:
+      operationId: health
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Check service status
+schemes:
+- http
+swagger: "2.0"

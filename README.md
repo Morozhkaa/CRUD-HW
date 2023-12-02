@@ -1,139 +1,47 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-# User service
+# API for online store.
 
-<img align="right" width="45%" src="./images/users.png">
-Cервис, хранящий информацию о пользователях (поддерживает базовые CRUD операции).  
+Связка микросервисов, содержащая сервис авторизации, сервисы заказа и биллинга.
 
-__Используемые технологии__:
-- PostgreSQL (в качестве хранилища данных)
-- Docker (для запуска сервиса)
-- Swagger (для документации API)
-- gin-gonic/gin (веб фреймворк)
-- pgx (драйвер для работы с PostgreSQL)
-- slog (для логирования)
-
-Сервис был написан с Clean Architecture, что позволяет легко расширять функционал сервиса и тестировать его. Также был реализован Graceful Shutdown для корректного завершения работы сервиса.
+__Требования__:
+- __Сервис авторизации__ должен проверять логин и пароль пользователя и выдавать ему токен для обращения к другим сервисам. Во всех дальнейших запросах токен должен передаваться в хедере 'Authorization: Bearer <token>'. Сервис должен удовлетворять базовым требованиям безопасности.
+- __В сервисе биллинга__ должна быть возможность положить деньги на аккаунт пользователя, проверить баланс и снять деньги.
+- __Сервис заказа__ должен позволять создать заказ, посмотреть предыдущие заказы. При заказе нужно снимать с пользователя деньги, при недостаточном балансе возвращать ошибку и сохранять неуспешный заказ.
 
 
 # Usage
 
-Запустить сервис можно с помощью команды `make run`.
-
-Документацию после запуска сервиса можно посмотреть по адресу `http://localhost:3000/swagger/index.html`.
-
-
-## Parametrs formats
-  * email  `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$` - почта пользователя.
-    - [a-zA-Z0-9._%+\-]+   - набор символов до @
-    - @					- символ @, который разделяет имя пользователя и доменное имя.
-    - [a-zA-Z0-9.\-]+		- набор символов в доменном имени
-  	- \\.					- символ точки
-    - [a-zA-Z]{2,}			- расширение домена (минимум 2 символа, напр: .com, .net, .org)
-
-  * phone  `^\+\d{11}$` - номер телефона.
+1. Склонировать репозиторий:  ```git clone https://github.com/Morozhkaa/CRUD-HW.git```
+2. Зайти в директорию и переключиться на hw-3 ветку: ```cd CRUD-HW && git checkout hw-3```
+3. Добавить в репозиторий .env файл, используя в качестве примера .env.example.
+4. Запустить сервис: ```make run```.
+5. Документацию по конкретному сервису можно посмотреть в Readme к нему.
 
 
-## Examples
+## General architecture
 
-Некоторые примеры запросов
-- [Проверка доступности сервиса](#health)
-- [Создание пользователя](#create)
-- [Удаление пользователя](#delete)
-- [Обновление информации о пользователе](#update)
-- [Получение информации о пользователе](#get)
-
-### Проверка доступности сервиса <a name="health"></a>
-
-```curl
-curl -X 'GET' \
-  'http://localhost:3000/health' \
-  -H 'accept: application/json'
-```
-Ответ:
-```json
-{
-  "success": "service available"
-}
-```
+<img align="center" width="75%" src="./images/api.png">
 
 
-### Создание пользователя <a name="create"></a>
+## Basic safety requirements:
 
-```curl
-curl -X 'POST' \
-  'http://localhost:3000/user' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "email": "iivanov@gmail.com",
-  "first_name": "Ivan",
-  "last_name": "Ivanov",
-  "password": "qwerty1234",
-  "phone": "+79999999999",
-  "username": "IvanIvanov2000"
-}'
-```
-Пример ответа:
-```json
-{
-  "success": "user with username 'IvanIvanov2000' created"
-}
-```
-
-### Удаление пользователя <a name="delete"></a>
-
-```curl
-curl -X 'DELETE' \
-  'http://localhost:3000/user/IvanIvanov2000' \
-  -H 'accept: application/json'
-```
-Пример ответа:
-```json
-{
-  "success": "user with username 'IvanIvanov2000' deleted"
-}
-```
+1. Пароли захшированы с использованием salt, secret.
+2. Аутентификация с использованием access, refresh JWT токенов (актуальны 1 и 60 минут соотвественно).
+3. Пароли к БД, Salt, Secret храним в отдельном .env файле.
+4. Пароли нетривиальные и разные к разным БД.
 
 
-### Обновление информации о пользователе <a name="update"></a>
+## Testing:
 
-```curl
-curl -X 'PUT' \
-  'http://localhost:3000/user/IvanIvanov2000' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "email": "iivanov@gmail.com",
-  "first_name": "Ivan",
-  "last_name": "Ivanov",
-  "password": "qwerty1234",
-  "phone": "+79999999999",
-  "username": "IvanIvanov2000"
-}'
-```
-Пример ответа:
-```json
-{
-  "success": "information for user with username 'IvanIvanov2000' updated"
-}
-```
+В директории test находится небольшая программа на Go, которая тестирует работу нашего приложения по следующему сценарию:
 
+* Создать пользователя
+* Положить деньги на счет пользователя
+* Сделать заказ, на который хватает денег
+* Убедиться, что деньги сняли
+* Сделать заказ, на который не хватает денег
+* Проверить, что заказ сохранился как неуспешный
+* Проверить, что баланс не изменился
 
-### Получение информации о пользователе <a name="get"></a>
-
-```curl
-curl -X 'GET' \
-  'http://localhost:3000/user/IvanIvanov2000' \
-  -H 'accept: application/json'
-```
-Пример ответа:
-```json
-{
-  "email": "iivanov@gmail.com",
-  "first_name": "Ivan",
-  "last_name": "Ivanov",
-  "phone": "+79999999999",
-  "username": "IvanIvanov2000"
-}
-```
+Проверить, что скрипт отработал успешно, можно перейдя в логи контейнера script.

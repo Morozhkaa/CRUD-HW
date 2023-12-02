@@ -1,31 +1,115 @@
 version: "3.8"
 
+networks:
+  app:
+    external: true
+    
 services:
   user-service:
-    container_name: user-service
     build:
-      context: .
+      context: ./auth-service
       dockerfile: Dockerfile
     environment:
       - HTTP_PORT=3000
       - IS_PROD=false
-      - DB_URL=postgres://postgres:qwerty@service-db:5432/users?sslmode=disable
+      - DB_URL=postgres://postgres:${AUTH_POSTGRES_PASSWORD}@users-db/users?sslmode=disable
       - TIMEOUT=10s
       - IDLE_TIMEOUT=60s
+      - SALT=${SALT}
+      - SECRET=${SECRET}
     ports:
       - "3000:3000"
     depends_on:
-      - service-db
+      - users-db
     restart: unless-stopped
+    networks:
+      - app
 
-  service-db:
-    container_name: service-db
+  users-db:
     image: postgres:15.1
     volumes:
-      - ./internal/adapters/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./auth-service/internal/adapters/db/init.sql:/docker-entrypoint-initdb.d/init.sql
     environment:
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=qwerty
+      - POSTGRES_PASSWORD=${AUTH_POSTGRES_PASSWORD}
+    ports:
+      - "5429:5432"
+    restart: unless-stopped
+    networks:
+      - app
+
+  billing-service:
+    build:
+      context: ./billing-service
+      dockerfile: Dockerfile
+    environment:
+      - HTTP_PORT=8080
+      - IS_PROD=false
+      - DB_URL=postgres://postgres:${BILLING_POSTGRES_PASSWORD}@billing-db/balances?sslmode=disable
+      - TIMEOUT=10s
+      - IDLE_TIMEOUT=60s
+      - AUTH_URL=http://user-service:3000/
+    ports:
+      - "8080:8080"
+    depends_on:
+      - billing-db
+    restart: unless-stopped
+    networks:
+      - app
+
+  billing-db:
+    image: postgres:15.1
+    volumes:
+      - ./billing-service/internal/adapters/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${BILLING_POSTGRES_PASSWORD}
     ports:
       - "5431:5432"
     restart: unless-stopped
+    networks:
+      - app
+
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    environment:
+      - HTTP_PORT=9000
+      - IS_PROD=false
+      - DB_URL=postgres://postgres:${ORDER_POSTGRES_PASSWORD}@order-db/orders?sslmode=disable
+      - TIMEOUT=10s
+      - IDLE_TIMEOUT=60s
+      - AUTH_URL=http://user-service:3000/
+      - BILLING_URL=http://billing-service:8080/
+    ports:
+      - "9000:9000"
+    depends_on:
+      - order-db
+    restart: unless-stopped
+    networks:
+      - app
+
+  order-db:
+    image: postgres:15.1
+    volumes:
+      - ./order-service/internal/adapters/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${ORDER_POSTGRES_PASSWORD}
+    ports:
+      - "5430:5432"
+    restart: unless-stopped
+    networks:
+      - app
+
+  script:
+    build:
+      context: ./test
+      dockerfile: Dockerfile
+    depends_on:
+      - user-service
+      - billing-service
+      - order-service
+    networks:
+      - app
